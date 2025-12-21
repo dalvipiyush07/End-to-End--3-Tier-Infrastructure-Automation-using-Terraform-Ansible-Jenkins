@@ -1,0 +1,25 @@
+# ---------------- Web Server ----------------
+- name: Install nginx and deploy web files
+  hosts: webserver
+  become: yes
+
+  vars:
+    package_name: nginx
+    service_name: nginx
+
+  tasks:
+    - name: Install nginx
+      ansible.builtin.dnf:
+        name: "{{ package_name }}"
+        state: present
+
+    - name: Start and enable nginx service
+      ansible.builtin.systemd_service:
+        name: "{{ service_name }}"
+        state: started
+        enabled: yes
+
+    - name: Deploy website folder
+      ansible.builtin.copy:
+        src: ../website/
+        dest: /usr/share/nginx/html/

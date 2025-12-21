@@ -1,0 +1,49 @@
+---
+- name: Configure App Server (Nginx + PHP + MySQL)
+  hosts: appserver
+  become: yes
+
+  tasks:
+    - name: Install Nginx, PHP, PHP-FPM, MySQL Server
+      ansible.builtin.dnf:
+        name:
+          - nginx
+          - php
+          - php-fpm
+          - php-mysqlnd
+          - mysql-server
+        state: present
+
+    - name: Start and enable Nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Start and enable PHP-FPM
+      ansible.builtin.systemd_service:
+        name: php-fpm
+        state: started
+        enabled: yes
+
+    - name: Start and enable MySQL
+      ansible.builtin.systemd_service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Ensure web root directory exists
+      ansible.builtin.file:
+        path: /var/www/html
+        state: directory
+        owner: nginx
+        group: nginx
+        mode: "0755"
+
+    - name: Deploy PHP backend file
+      ansible.builtin.copy:
+        src: ../website/api.php
+        dest: /var/www/html/api.php
+        owner: nginx
+        group: nginx
+        mode: "0644"
