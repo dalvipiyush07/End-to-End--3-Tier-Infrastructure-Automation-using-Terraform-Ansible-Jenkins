@@ -1,0 +1,84 @@
+pipeline {
+    agent any
+
+    environment {
+        ANSIBLE_HOST_KEY_CHECKING = "False"
+    }
+
+    stages {
+
+        stage('Checkout Source Code') {
+            steps {
+                echo "Cloning GitHub repository..."
+                git branch: 'main',
+                    url: 'https://github.com/dalvipiyush07/ansible-3-tier-project.git'
+            }
+        }
+
+        stage('Prepare SSH Key for Ansible') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'ansible-key',
+                        keyFileVariable: 'SSH_KEY'
+                    )
+                ]) {
+                    sh '''
+                        echo "Setting up SSH key..."
+                        mkdir -p ~/.ssh
+                        cp $SSH_KEY ~/.ssh/id_rsa
+                        chmod 600 ~/.ssh/id_rsa
+                    '''
+                }
+            }
+        }
+
+        stage('Generate Ansible Inventory') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'WEB_SERVER_IP', variable: 'WEB_SERVER_IP'),
+                    string(credentialsId: 'APP_SERVER_IP', variable: 'APP_SERVER_IP')
+                ]) {
+                    sh '''
+                        echo "Generating dynamic inventory..."
+                        export SSH_KEY_PATH=~/.ssh/id_rsa
+                        envsubst < ansible/inventory.ini > ansible/inventory.gen.ini
+
+                        echo "----- INVENTORY USED -----"
+                        cat ansible/inventory.gen.ini
+                        echo "--------------------------"
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Web Server') {
+            steps {
+                echo "Deploying frontend on Web Server..."
+                sh '''
+                    cd ansible
+                    ansible-playbook -i inventory.gen.ini web.yml
+                '''
+            }
+        }
+
+        stage('Deploy App Server') {
+            steps {
+                echo "Deploying backend on App Server..."
+                sh '''
+                    cd ansible
+                    ansible-playbook -i inventory.gen.ini app.yml
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ 3-Tier Deployment Completed Successfully"
+        }
+        failure {
+            echo "❌ Deployment Failed – Check Ansible logs"
+        }
+    }
+}
