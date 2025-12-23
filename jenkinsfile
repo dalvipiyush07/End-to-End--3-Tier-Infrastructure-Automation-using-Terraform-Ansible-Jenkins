@@ -2,32 +2,12 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_USER = "ec2-user"
-        REMOTE_HOST = "3.111.52.174"
-        CRED_ID     = "ansible-key"
+        ANSIBLE_USER = "ec2-user"
+        ANSIBLE_HOST = "3.111.52.174"
     }
 
     stages {
-
-        stage('Checkout Code') {
-            steps {
-                git url: 'https://github.com/dalvipiyush07/3-tier.git',
-                    branch: 'main'
-                               }
-        }
-
-        stage('Install Ansible on Jenkins Node') {
-            steps {
-                sh '''
-                    if ! command -v ansible-playbook >/dev/null 2>&1; then
-                      sudo apt update
-                      sudo apt install -y ansible
-                    fi
-                '''
-            }
-        }
-
-        stage('Prepare SSH Key') {
+        stage('Run Ansible from Remote Server') {
             steps {
                 withCredentials([
                     sshUserPrivateKey(
@@ -36,26 +16,17 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        mkdir -p ~/.ssh
-                        cp $SSH_KEY ~/.ssh/id_rsa
-                        chmod 600 ~/.ssh/id_rsa
-                    '''
-                }
-            }
-        }
+                        chmod 600 $SSH_KEY
 
-        stage('Generate Inventory & Deploy') {
-            steps {
-                withCredentials([
-                    string(credentialsId: 'WEB_SERVER_IP', variable: 'WEB_SERVER_IP'),
-                    string(credentialsId: 'APP_SERVER_IP', variable: 'APP_SERVER_IP'),
-                ]) {
-                    sh '''
-                        export SSH_KEY_PATH=~/.ssh/id_rsa
-                        envsubst < ansible/inventory.ini > ansible/inventory.gen.ini
-                        cd ansible
-                        ansible-playbook -i inventory.gen.ini web.yml
-                        ansible-playbook -i inventory.gen.ini app.yml
+                        ssh -o StrictHostKeyChecking=no \
+                            -i $SSH_KEY \
+                            ${ANSIBLE_USER}@${ANSIBLE_HOST} << 'EOF'
+
+                        cd /home/ec2-user/ansible
+                        ansible-playbook -i inventory.ini web.yml
+                        ansible-playbook -i inventory.ini app.yml
+
+                        EOF
                     '''
                 }
             }
