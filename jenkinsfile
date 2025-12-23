@@ -11,44 +11,46 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        set -e
+set -e
 
-                        ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@3.111.52.174 <<EOF
-                        echo "=== Connected to Ansible Server ==="
+ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@3.111.52.174 <<EOF
+echo "=== Connected to Ansible Server ==="
 
-                        # 1️⃣ Clone or update GitHub repo
-                        cd /home/ec2-user
-                        if [ ! -d 3-tier ]; then
-                            git clone https://github.com/dalvipiyush07/3-tier.git
-                        else
-                            cd 3-tier && git pull && cd ..
-                        fi
+# Go to repo directory
+cd /home/ec2-user
 
-                        # 2️⃣ Prepare Ansible playbook directory
-                        sudo mkdir -p /etc/ansible/playbook
-                        sudo chown ec2-user:ec2-user /etc/ansible/playbook
+# Clone or update repo
+if [ ! -d 3-tier ]; then
+    git clone https://github.com/dalvipiyush07/3-tier.git
+else
+    cd 3-tier && git pull && cd ..
+fi
 
-                        # 3️⃣ Copy playbooks, inventory & website
-                        cp 3-tier/ansible/inventory.ini /etc/ansible/playbook/
-                        cp 3-tier/ansible/web.yml /etc/ansible/playbook/
-                        cp 3-tier/ansible/app.yml /etc/ansible/playbook/
-                        cp -r 3-tier/website /etc/ansible/playbook/
+cd /home/ec2-user/3-tier
 
-                        cd /etc/ansible/playbook
-                        echo "=== Files in playbook directory ==="
-                        ls -l
+# Prepare Ansible playbook directory
+sudo mkdir -p /etc/ansible/playbook
+sudo chown ec2-user:ec2-user /etc/ansible/playbook
 
-                        # 4️⃣ Syntax check
-                        ansible-playbook --syntax-check -i inventory.ini web.yml
-                        ansible-playbook --syntax-check -i inventory.ini app.yml
+# Copy inventory, playbooks and website
+cp ansible/inventory.ini /etc/ansible/playbook/
+cp ansible/web.yml /etc/ansible/playbook/
+cp ansible/app.yml /etc/ansible/playbook/
+cp -r website /etc/ansible/playbook/
 
-                        # 5️⃣ Run playbooks
-                        ansible-playbook -i inventory.ini web.yml
-                        ansible-playbook -i inventory.ini app.yml
+cd /etc/ansible/playbook
 
-                        echo "=== Ansible Execution Completed ==="
-                        EOF
-                    '''
+# Syntax check
+ansible-playbook --syntax-check -i inventory.ini web.yml
+ansible-playbook --syntax-check -i inventory.ini app.yml
+
+# Run playbooks
+ansible-playbook -i inventory.ini web.yml
+ansible-playbook -i inventory.ini app.yml
+
+echo "=== Ansible Execution Completed ==="
+EOF
+'''
                 }
             }
         }
