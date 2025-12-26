@@ -159,10 +159,7 @@ The combination of Terraform, Ansible, and Jenkins results in a scalable, reliab
 **Piyush Dalvi**  
 GitHub: https://github.com/dalvipiyush07  
 
-GitHub: https://www.linkedin.com/in/piyush-dalvi-5b1499382?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app
+Linkdin: https://www.linkedin.com/in/piyush-dalvi-5b1499382?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app
 
 Medium: https://medium.com/@piyushdalvi65
 ---
-
-## Acknowledgement
-Completed under the guidance of respected mentors.
